@@ -1,0 +1,61 @@
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #f9f9f9;
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  max-width: 1000px;
+  margin: auto;
+  padding: 2rem;
+}
+
+.title {
+  text-align: center;
+  font-size: 2.2rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.panel {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.upload-panel input {
+  margin-top: 1rem;
+  margin-right: 1rem;
+}
+
+button {
+  background-color: #0077ff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+input[type='text'] {
+  width: calc(100% - 110px);
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+  margin-top: 1rem;
+}
+
+.chat-response {
+  margin-top: 1rem;
+  background: #f1f1f1;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+}
