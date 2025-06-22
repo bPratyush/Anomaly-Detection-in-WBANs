@@ -118,9 +118,9 @@ def upload():
 
         # Final result logic
         types = []
-        if point_ratio > 0.3:
+        if point_ratio > 0.1:
             types.append("Point Anomaly")
-        if context_ratio > 0.3:
+        if context_ratio > 0.1:
             types.append("Contextual Anomaly")
 
         summary = "Anomalous" if types else "Normal"

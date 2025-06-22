@@ -925,6 +925,22 @@ body {
   gap: 8px;
 }
 
+.footer-link-button {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 0;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.footer-link-button:hover {
+  color: #9aa0a6;
+  text-decoration: underline;
+}
+
 .footer-link:hover {
   color: #ffffff;
   text-decoration: underline;

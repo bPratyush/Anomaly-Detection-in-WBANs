@@ -2,18 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import "./App.css";
 
-// Utility function for adding delays
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Fix API key access
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-
-// Initialize with explicit API version (v1 instead of v1beta)
 const genAI = new GoogleGenerativeAI(API_KEY, {
-  apiVersion: "v1" // Use stable v1 instead of beta
+  apiVersion: "v1"
 });
 
-// CSV file validation function
 const validateCSV = async (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -31,10 +25,8 @@ const validateCSV = async (file) => {
   });
 };
 
-// Direct API call as fallback approach
 const directGeminiRequest = async (prompt) => {
   try {
-    // Direct API call as absolute last resort
     const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
       method: 'POST',
       headers: {
@@ -63,17 +55,13 @@ const directGeminiRequest = async (prompt) => {
   }
 };
 
-// Update the tryMultipleModels function
 const tryMultipleModels = async (prompt) => {
-  // We'll determine which models are available first
   let availableModels = [];
   let modelPaths = [];
   
   try {
     const models = await genAI.listModels();
     console.log("Available models:", models);
-    
-    // Store full model paths
     if (models && models.models) {
       modelPaths = models.models.map(m => m.name);
       availableModels = models.models.map(m => m.name.split('/').pop());
@@ -82,7 +70,6 @@ const tryMultipleModels = async (prompt) => {
     }
   } catch (error) {
     console.error("Error listing models:", error);
-    // If we can't list models, try these common formats with v1 path
     modelPaths = [
       "gemini-pro",
       "gemini-1.0-pro",
@@ -96,8 +83,6 @@ const tryMultipleModels = async (prompt) => {
   }
   
   let lastError = null;
-  
-  // First try the full paths returned by the API
   for (const modelPath of modelPaths) {
     try {
       console.log(`Attempting to use model path: ${modelPath}`);
@@ -120,18 +105,15 @@ const tryMultipleModels = async (prompt) => {
     }
   }
   
-  // Try direct API call as last resort
   try {
     console.log("Attempting direct API call as last resort");
     return await directGeminiRequest(prompt);
   } catch (directErr) {
     console.error("Direct API call failed:", directErr);
-    // If we get here, all methods failed
     throw lastError || directErr || new Error("Failed to generate content with any method");
   }
 };
 
-// List available models for debugging
 const listAvailableModels = async () => {
   try {
     const models = await genAI.listModels();
@@ -143,7 +125,6 @@ const listAvailableModels = async () => {
   }
 };
 
-// Call this once when the app loads
 console.log("Attempting to list available models...");
 listAvailableModels();
 
@@ -167,8 +148,6 @@ function App() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const chatHistoryRef = useRef(null);
   const fileInputRef = useRef(null);
-  
-  // Example questions for the chat
   const exampleQuestions = [
     "Explain these results in simple terms",
     "What do these anomalies mean for my health?",
@@ -176,8 +155,6 @@ function App() {
     "What should I do about these results?",
     "How reliable is this analysis?"
   ];
-
-  // Handle file selection with validation
   const handleFileSelect = async (e) => {
     const selectedFile = e.target.files ? e.target.files[0] : null;
     if (!selectedFile) return;
@@ -193,7 +170,6 @@ function App() {
       setFileTooSmallError(true);
       setErrorMsg(error.message);
       setFile(null);
-      // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -202,7 +178,6 @@ function App() {
     }
   };
 
-  // Handle file drag events
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -214,7 +189,6 @@ function App() {
     }
   };
 
-  // Handle file drop
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -222,7 +196,6 @@ function App() {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      // Validate file extension
       if (droppedFile.name.endsWith('.csv')) {
         handleFileSelect({ target: { files: [droppedFile] } });
       } else {
@@ -231,20 +204,17 @@ function App() {
     }
   };
 
-  // Scroll to bottom of chat history when new messages appear
   useEffect(() => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
   }, [chatHistory]);
 
-  // Parse API errors to provide user-friendly messages
   const parseGeminiError = (error) => {
     const errorMessage = error.message || "Unknown error";
     console.error("Gemini API error:", errorMessage);
     
     if (errorMessage.includes("quota") || errorMessage.includes("429")) {
-      // Set quota reset time to 60 minutes from now (approximate)
       setQuotaResetTime(new Date(Date.now() + 60 * 60 * 1000));
       
       return {
@@ -286,9 +256,6 @@ function App() {
     }
   };
 
-  // ...existing code...
-
-// Update the model references in fetchLLMExplanation with improved flow
 const fetchLLMExplanation = async (summary, types) => {
   try {
     setExplanationLoading(true);
@@ -297,45 +264,34 @@ const fetchLLMExplanation = async (summary, types) => {
     if (!API_KEY) {
       throw new Error("Gemini API key is missing. Check your environment variables.");
     }
-    
-    // Modified prompt to request a concise summary
-    const prompt = `You are a medical AI assistant explaining WBAN (Wireless Body Area Network) sensor data results to a patient.
+    const prompt = `You're providing analysis of WBAN (Wireless Body Area Network) sensor data. Your tone should be warm and conversational, but knowledgeable.
 
 Analysis summary: ${summary}
-${types && types.length > 0 ? `Anomaly types detected: ${types.join(', ')}` : 'No specific anomaly types detected.'}
+${types && types.length > 0 ? `Patterns detected: ${types.join(', ')}` : 'No unusual patterns detected.'}
 
-Please provide a VERY BRIEF explanation (2-3 sentences maximum) of these results that:
-1. Clearly states what the summary means in simple, non-technical language
-2. Mentions the specific anomaly types (if any) without detailed explanations
-3. Provides ONE very brief next step recommendation if appropriate
+Provide a brief, natural explanation (3-4 sentences) that:
+1. Explains what these results likely mean in everyday language
+2. Mentions any detected patterns naturally in conversation
+3. Suggests what might be good to know or do next
 
-Keep your response under 50 words total. The user can ask for more detailed information via chat if needed.`;
+Your response should sound like a knowledgeable friend explaining results - conversational but informed. No bullet points, no stars, no formatting symbols. Just natural conversation.`;
     
-    console.log("Explanation prompt:", prompt);
-    
-    // Try direct request first (skipping the model selection that might be failing)
+    console.log("Explanation prompt:", prompt)
     try {
       console.log("Attempting direct API call for explanation");
       await sleep(500); // Small delay to avoid rate limiting
       const text = await directGeminiRequest(prompt);
       console.log("Successfully received explanation from direct API call");
-      
-      // Add a prompt encouraging users to ask questions
       const finalResponse = `${text.trim()}\n\nNeed more details? Ask specific questions in the chat below.`;
       setLlmResponse(finalResponse);
     } catch (directErr) {
       console.error("Direct API call failed for explanation:", directErr);
-      
-      // Add a delay before trying another approach
       await sleep(1000);
-      
-      // Now try multiple models as a fallback
       try {
         console.log("Falling back to tryMultipleModels for explanation");
         const text = await tryMultipleModels(prompt);
         console.log("Successfully received explanation from multiple models approach");
-        
-        // Add a prompt encouraging users to ask questions
+
         const finalResponse = `${text.trim()}\n\n Need more details? Ask specific questions in the chat below.`;
         setLlmResponse(finalResponse);
       } catch (modelErr) {
@@ -348,7 +304,6 @@ Keep your response under 50 words total. The user can ask for more detailed info
     const error = parseGeminiError(err);
     
     if (error.isQuotaError) {
-      // Provide fallback explanation when quota is exceeded
       setLlmResponse(`⚠️ ${error.message}\n\n${error.details}\n\nIn the meantime, here's a brief explanation:\n\n${getDefaultExplanation(summary, types)}\n\n_Ask for more details in the chat below._`);
     } else {
       setLlmResponse(`⚠️ AI explanation unavailable: ${error.message}\n\nTry using the chat feature below to ask about your results.`);
@@ -358,17 +313,10 @@ Keep your response under 50 words total. The user can ask for more detailed info
   }
 };
 
-// ...existing code...
-
-  // Updated askGemini function to include analysis results context
   const askGemini = async () => {
     if (!chatInput.trim()) return;
-    
-    // Add user question to chat history
     const newHistory = [...chatHistory, { role: "user", content: chatInput }];
     setChatHistory(newHistory);
-    
-    // Clear input and show loading state
     const question = chatInput;
     setChatInput("");
     setChatResponse("Thinking...");
@@ -377,39 +325,30 @@ Keep your response under 50 words total. The user can ask for more detailed info
       if (!API_KEY) {
         throw new Error("Gemini API key is missing. Check your environment variables.");
       }
-      
-      // Include analysis results in the context if available
+
       let contextualPrompt = question;
-      
-      if (result) {
-        // Create a context-aware prompt that includes the analysis results
-        contextualPrompt = `You are a medical AI assistant specializing in interpreting WBAN (Wireless Body Area Network) sensor data. 
-Provide informative, medically accurate responses while maintaining a reassuring tone.
 
-Here are the current WBAN sensor analysis results:
-Analysis Summary: ${result.summary}
-${result.types && result.types.length > 0 ? `Anomaly Types Detected: ${result.types.join(', ')}` : 'No specific anomaly types detected.'}
-${llmResponse ? `Initial AI Explanation: ${llmResponse}` : ''}
+if (result) {
+  contextualPrompt = `You're a knowledgeable assistant analyzing WBAN (Wireless Body Area Network) sensor data. Your tone should be conversational but informative.
 
-The user's question is: "${question}"
+The sensor data analysis shows:
+- Overall assessment: ${result.summary}
+- ${result.types && result.types.length > 0 ? `Patterns identified: ${result.types.join(', ')}` : 'No unusual patterns identified.'}
+${llmResponse ? `- Earlier, you mentioned: ${llmResponse}` : ''}
 
-Please answer the user's question in the context of these analysis results. Be specific, detailed, and helpful. 
-If they're asking about the results or anomalies, explain what they mean in medical terms and their potential health implications.
-Use clear formatting with headings and concise paragraphs where appropriate.`;
-      } else {
-        // General WBAN knowledge prompt when no results are available
-        contextualPrompt = `You are a medical AI assistant specializing in WBAN (Wireless Body Area Network) technology and anomaly detection in medical sensor data.
-Provide informative, accurate responses about WBAN technology, anomaly detection methods, medical sensors, or related topics.
+The person just asked: "${question}"
 
-The user's question is: "${question}"
+Respond naturally as if you're having a conversation. Be helpful, clear, and approachable. Provide accurate information but avoid overly technical medical jargon unless necessary. Don't use formatting like bullet points or headers - your response should flow like natural conversation. Balance being informative with being reassuring.`;
+} else {
+ 
+  contextualPrompt = `You're a knowledgeable assistant specializing in WBAN (Wireless Body Area Network) technology and sensor data analysis. 
 
-Please provide a detailed, educational response that helps the user understand this technology and its applications in healthcare.
-Use clear formatting with headings and concise paragraphs where appropriate.`;
-      }
+The person just asked: "${question}"
+
+Respond in a natural, conversational way while sharing accurate information. Avoid technical jargon when possible and explain concepts clearly. Don't use formatting like bullet points or headers - your response should flow like a natural conversation. Be informative without being overly formal.`;
+}
       
       console.log("Sending contextual prompt:", contextualPrompt);
-      
-      // Try direct request first
       try {
         console.log("Attempting direct API call for chat");
         const text = await directGeminiRequest(contextualPrompt);
@@ -417,10 +356,8 @@ Use clear formatting with headings and concise paragraphs where appropriate.`;
       } catch (directErr) {
         console.error("Direct API call failed for chat:", directErr);
         
-        // Add a delay before trying another approach
         await sleep(1000);
         
-        // Now try multiple models as a fallback
         try {
           console.log("Falling back to tryMultipleModels for chat");
           const text = await tryMultipleModels(contextualPrompt);
@@ -456,22 +393,20 @@ Use clear formatting with headings and concise paragraphs where appropriate.`;
     const formData = new FormData();
     formData.append("file", file);
 
-    try {
-      const res = await fetch("https://wban-anomaly-detection.onrender.com/upload", {
-        method: "POST",
-        body: formData,
-      });
+   try {
+  const res = await fetch("http://127.0.0.1:5000/upload", {
+    method: "POST",
+    body: formData,
+  });
 
       if (!res.ok) throw new Error(await res.text());
 
       const data = await res.json();
       setResult(data);
-      
-      // Reset chat history when new results come in
+
       setChatHistory([]);
       
-      // Add a small delay before making the Gemini API call
-      // This helps prevent rate limiting issues
+      // Add a small delay before making the Gemini API call. This helps prevent rate limiting issues
       await sleep(1000);
       
       await fetchLLMExplanation(data.summary, data.types);
@@ -509,7 +444,7 @@ Use clear formatting with headings and concise paragraphs where appropriate.`;
           <div className="card-header">
             <h2 className="card-title">Upload Sensor Data</h2>
             <div className="card-subtitle">
-              Upload your WBAN sensor data file to detect anomalies in body sensor networks.
+              Upload your WBAN sensor data file containing at least 100 entries to detect anomalies in body sensor networks.
             </div>
           </div>
           
@@ -794,46 +729,73 @@ Use clear formatting with headings and concise paragraphs where appropriate.`;
       <footer className="footer">
         <div className="footer-content">
           <div className="footer-section">
-            <h3 className="footer-title">About</h3>
-            <div className="footer-links">
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); window.open('https://en.wikipedia.org/wiki/Wireless_body_area_network', '_blank')}}>
-                About WBANs
-              </a>
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); window.open('https://en.wikipedia.org/wiki/Anomaly_detection', '_blank')}}>
-                Anomaly Detection
-              </a>
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); window.open('https://ai.google/discover/generativeai/', '_blank')}}>
-                About Gemini AI
-              </a>
-            </div>
-          </div>
-          
-          <div className="footer-section">
-            <h3 className="footer-title">Resources</h3>
-            <div className="footer-links">
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); setShowHelpModal(true)}}>
-                <span>❓</span> Help Center
-              </a>
-              {/* <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); window.open('https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6678456/', '_blank')}}>
-                <span>📄</span> Research Papers
-              </a> */}
-            </div>
-          </div>
-          
-          <div className="footer-section">
-            <h3 className="footer-title">Legal</h3>
-            <div className="footer-links">
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); setShowTermsModal(true)}}>
-                Terms of Service
-              </a>
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); setShowPrivacyModal(true)}}>
-                Privacy Policy
-              </a>
-              <a href="#" className="footer-link" onClick={(e) => {e.preventDefault(); window.alert('© ' + new Date().getFullYear() + ' WBAN Anomaly Detection - All rights reserved')}}>
-                Copyright Information
-              </a>
-            </div>
-          </div>
+  <h3 className="footer-title">About</h3>
+  <div className="footer-links">
+    {/* Replace anchors with proper hrefs */}
+    <a 
+      href="https://en.wikipedia.org/wiki/Wireless_body_area_network"
+      className="footer-link" 
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      About WBANs
+    </a>
+    <a 
+      href="https://en.wikipedia.org/wiki/Anomaly_detection"
+      className="footer-link" 
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Anomaly Detection
+    </a>
+    <a 
+      href="https://ai.google/discover/generativeai/"
+      className="footer-link" 
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      About Gemini AI
+    </a>
+  </div>
+</div>
+
+<div className="footer-section">
+  <h3 className="footer-title">Resources</h3>
+  <div className="footer-links">
+    {/* Replace with button for modal triggers */}
+    <button 
+      className="footer-link-button" 
+      onClick={() => setShowHelpModal(true)}
+    >
+      Help Center
+    </button>
+  </div>
+</div>
+
+<div className="footer-section">
+  <h3 className="footer-title">Legal</h3>
+  <div className="footer-links">
+    {/* Replace with buttons for modal triggers */}
+    <button 
+      className="footer-link-button" 
+      onClick={() => setShowTermsModal(true)}
+    >
+      Terms of Service
+    </button>
+    <button 
+      className="footer-link-button" 
+      onClick={() => setShowPrivacyModal(true)}
+    >
+      Privacy Policy
+    </button>
+    <button 
+      className="footer-link-button" 
+      onClick={() => window.alert('© ' + new Date().getFullYear() + ' WBAN Anomaly Detection - All rights reserved')}
+    >
+      Copyright Information
+    </button>
+  </div>
+</div>
           </div>
         
         <div className="footer-bottom">
@@ -928,7 +890,7 @@ Use clear formatting with headings and concise paragraphs where appropriate.`;
               <p>We reserve the right to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect.</p>
               
               <h3>Contact Us</h3>
-              <p>If you have any questions about these Terms, please contact us at terms@wbananomaly.example.com</p>
+              <p>If you have any questions about these Terms, please contact us</p>
             </div>
             <div className="modal-footer">
               <button className="modal-btn" onClick={() => setShowTermsModal(false)}>Close</button>
