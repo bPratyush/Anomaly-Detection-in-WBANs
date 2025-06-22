@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: wban-anomaly-detection
+    runtime: python
+    buildCommand: pip install -r src/project/backend/requirements.txt
+    startCommand: cd src/project/backend && gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
