@@ -155,28 +155,34 @@ function App() {
     "What should I do about these results?",
     "How reliable is this analysis?"
   ];
-  const handleFileSelect = async (e) => {
-    const selectedFile = e.target.files ? e.target.files[0] : null;
-    if (!selectedFile) return;
+const handleFileSelect = async (e) => {
+  const selectedFile = e.target.files ? e.target.files[0] : null;
+  if (!selectedFile) return;
+  
+  setValidatingFile(true);
+  setFileTooSmallError(false);
+  setErrorMsg("");
+  
+  try {
+    await validateCSV(selectedFile);
+    setFile(selectedFile);
+  } catch (error) {
+
+    setFileTooSmallError(true);
+    setErrorMsg(error.message);
+    setFile(null);
+  
+    setResult(null);
+    setLlmResponse("");
+    setChatHistory([]);
     
-    setValidatingFile(true);
-    setFileTooSmallError(false);
-    setErrorMsg("");
-    
-    try {
-      await validateCSV(selectedFile);
-      setFile(selectedFile);
-    } catch (error) {
-      setFileTooSmallError(true);
-      setErrorMsg(error.message);
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } finally {
-      setValidatingFile(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
-  };
+  } finally {
+    setValidatingFile(false);
+  }
+};
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -849,7 +855,7 @@ Respond in a natural, conversational way while sharing accurate information. Avo
               <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.</p>
               
               <h3>Contact Us</h3>
-              <p>If you have any questions about this Privacy Policy, please contact us at privacy@wbananomaly.example.com</p>
+              <p>If you have any questions about this Privacy Policy, please contact us</p>
             </div>
             <div className="modal-footer">
               <button className="modal-btn" onClick={() => setShowPrivacyModal(false)}>Close</button>
