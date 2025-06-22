@@ -105,23 +105,30 @@ def upload():
         X_rl = np.expand_dims(norm_context, axis=-1)
 
         # RL-based predictions
-        rl_preds = [rl_model.predict(obs, deterministic=True)[0] for obs in X_rl]
-        rl_preds = np.array(rl_preds)
+        rl_preds = np.array([rl_model.predict(obs, deterministic=True)[0] for obs in X_rl])
 
+        # Point anomaly threshold and ratio
         threshold_point = np.percentile(error_point, 95)
         point_anomalies = np.sum(error_point > threshold_point)
         point_ratio = point_anomalies / len(error_point)
+
+        # Contextual anomaly ratio
         context_anomalies = np.sum(rl_preds == 1)
         context_ratio = context_anomalies / len(rl_preds)
 
-# Decision based on proportions
-        if context_ratio > 0.3:
-            return jsonify({"summary": "Anomalous", "type": "Contextual Anomaly"})
+        # Final result logic
+        types = []
         if point_ratio > 0.3:
-            return jsonify({"summary": "Anomalous", "type": "Point Anomaly"})
-        else:
-            return jsonify({"summary": "Normal", "type": "None"})
+            types.append("Point Anomaly")
+        if context_ratio > 0.3:
+            types.append("Contextual Anomaly")
 
+        summary = "Anomalous" if types else "Normal"
+
+        return jsonify({
+            "summary": summary,
+            "types": types
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
